@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Script AI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="keyBanner" class="hidden">
+  <div class="key-banner-label">Gemini chat needs the local server. Run npm start, then open http://localhost:3000.</div>
+  <button type="button" onclick="openLocalApp()">Open Local App</button>
+</div>
+
+<!-- ── TOP NAV ── -->
+<div class="top-nav">
+  <div class="nav-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M9 12h6M9 16h4M6 4h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+      <path d="M9 8h2"/>
+    </svg>
+    Script AI
+  </div>
+  <div class="nav-right">
+    <div id="saveIndicator" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.4s;display:flex;align-items:center;gap:5px;font-weight:600;letter-spacing:0.05em;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+      SAVED
+    </div>
+    <button class="btn-download" onclick="openModal()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 11l5 5 5-5M5 19h14"/></svg>
+      Export PDF
+    </button>
+  </div>
+</div>
+
+<!-- ── WORKSPACE ── -->
+<div class="workspace">
+
+  <!-- ── LEFT PANEL ── -->
+  <div class="left-panel">
+    <div class="panel-header" style="position:relative;">
+      <button class="hamburger-btn" onclick="toggleHamburger()" title="Menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18M3 12h18M3 18h18"/>
+        </svg>
+      </button>
+      <span class="panel-title">Projects</span>
+    </div>
+
+    <!-- hamburger dropdown -->
+    <div class="ham-dropdown" id="hamDropdown">
+      <button class="ham-item" onclick="newProject(); closeHamburger()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Project
+      </button>
+      <div class="ham-projects-divider"></div>
+      <div class="ham-projects-label">Recent Projects</div>
+      <div id="hamProjectList"></div>
+    </div>
+
+    <!-- AI Chat label -->
+    <div class="panel-section-label">AI Chat</div>
+
+    <!-- chat messages -->
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-welcome" id="chatWelcome">
+        <div class="chat-welcome-icon">✦</div>
+        <div class="chat-welcome-text">Tell me your story idea and I'll help bring it to life — script, outline, storyboard and more.</div>
+      </div>
+    </div>
+
+    <!-- api key status -->
+    <div class="api-key-row" id="apiKeyRow" onclick="handleApiKeyRowClick()" title="API key status"></div>
+
+    <!-- upload area -->
+    <div class="upload-area" id="uploadArea" onclick="triggerUpload()" style="margin-bottom:0;">
+      <div class="upload-icon">📎</div>
+      <div class="upload-text">Drag & drop or <span>browse</span> to upload</div>
+    </div>
+    <input type="file" id="fileInput" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.txt,.webp,.gif" onchange="handleFileUpload(this)">
+
+    <!-- chat input -->
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask Script AI anything…" onkeydown="handleChatKey(event)" oninput="autoGrow(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendChat()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-panel">
+
+    <!-- layer tabs -->
+    <div class="layer-tabs">
+      <button class="layer-tab" data-layer="concept" onclick="switchLayer('concept')">Concept</button>
+      <button class="layer-tab" data-layer="outline" onclick="switchLayer('outline')">Outline</button>
+      <button class="layer-tab active" data-layer="script" onclick="switchLayer('script')">Script</button>
+      <button class="layer-tab" data-layer="storyboard" onclick="switchLayer('storyboard')">Storyboard</button>
+      <button class="layer-tab" data-layer="breakdown" onclick="switchLayer('breakdown')">Breakdown</button>
+      <button class="layer-tab" data-layer="schedule" onclick="switchLayer('schedule')">Schedule</button>
+    </div>
+
+    <!-- content area -->
+    <div class="content-area" id="contentArea">
+
+      <!-- CONCEPT LAYER -->
+      <div class="layer" id="layer-concept">
+        <div class="layer-empty">
+          <div class="layer-empty-icon">&#10022;</div>
+          <div class="layer-empty-text">Generate your project to see the concept.</div>
+        </div>
+      </div>
+
+      <!-- OUTLINE LAYER -->
+      <div class="layer" id="layer-outline">
+        <div class="layer-empty">
+          <div class="layer-empty-icon">&#10022;</div>
+          <div class="layer-empty-text">Generate your project to see the outline.</div>
+        </div>
+      </div>
+
+      <!-- SCRIPT LAYER -->
+      <div class="layer active" id="layer-script">
+        <div class="layer-empty">
+          <div class="layer-empty-icon">&#10022;</div>
+          <div class="layer-empty-text">Generate your project to see the script.</div>
+        </div>
+      </div>
+
+      <!-- STORYBOARD LAYER -->
+      <div class="layer" id="layer-storyboard">
+        <div class="layer-empty">
+          <div class="layer-empty-icon">&#10022;</div>
+          <div class="layer-empty-text">Generate your project to see the storyboard.</div>
+        </div>
+      </div>
+
+      <!-- BREAKDOWN LAYER -->
+      <div class="layer" id="layer-breakdown">
+        <div class="layer-empty">
+          <div class="layer-empty-icon">&#10022;</div>
+          <div class="layer-empty-text">Generate your project to see the breakdown.</div>
+        </div>
+      </div>
+
+      <!-- SCHEDULE LAYER -->
+      <div class="layer" id="layer-schedule">
+        <div class="layer-empty">
+          <div class="layer-empty-icon">&#10022;</div>
+          <div class="layer-empty-text">Generate your project to see the schedule.</div>
+        </div>
+      </div>
+
+    </div><!-- end content area -->
+  </div><!-- end right panel -->
+</div><!-- end workspace -->
+
+<!-- ── CONTEXT MENU ── -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" onclick="renameProject()">✏️ Rename</div>
+  <div class="ctx-item" onclick="deleteProject()">🗑 Delete</div>
+</div>
+
+<!-- ── DOWNLOAD MODAL ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+
+    <!-- Step A -->
+    <div class="modal-step active" id="stepA">
+      <div class="modal-header">
+        <div class="modal-step-indicator">Step 1 of 3</div>
+        <div class="modal-title">Script Information</div>
+        <div class="modal-sub">This will appear on the first page of your exported PDF.</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Script Name</label>
+          <input class="form-input" id="scriptName" type="text" placeholder="e.g. Love Across the Congregation">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Written By</label>
+          <input class="form-input" id="writtenBy" type="text" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="emailAddr" type="email" placeholder="you@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Number</label>
+          <input class="form-input" id="contactNum" type="tel" placeholder="+1 000 000 0000">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-modal-primary" onclick="goToStepB()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step B -->
+    <div class="modal-step" id="stepB">
+      <div class="modal-header">
+        <div class="modal-step-indicator">Step 2 of 3</div>
+        <div class="modal-title">Select Content</div>
+        <div class="modal-sub">Choose which sections to include in your exported PDF.</div>
+      </div>
+      <div class="checkbox-grid">
+        <div class="check-item checked" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-label">Concept</div>
+        </div>
+        <div class="check-item checked" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-label">Outline</div>
+        </div>
+        <div class="check-item checked" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-label">Script</div>
+        </div>
+        <div class="check-item checked" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-label">Storyboard</div>
+        </div>
+        <div class="check-item checked" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-label">Breakdown</div>
+        </div>
+        <div class="check-item checked" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-label">Schedule</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-secondary" onclick="goToStepA()">← Back</button>
+        <button class="btn-modal-primary" onclick="goToStepC()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step C -->
+    <div class="modal-step" id="stepC">
+      <div class="modal-header">
+        <div class="modal-step-indicator">Step 3 of 3</div>
+        <div class="modal-title">Ready to Export</div>
+        <div class="modal-sub">Your PDF will include the following sections in order.</div>
+      </div>
+      <div class="confirm-list" id="confirmList"></div>
+      <div class="modal-footer">
+        <button class="btn-modal-secondary" onclick="goToStepB()">← Back</button>
+        <button class="btn-modal-primary" onclick="downloadPDF()">⬇ Download PDF</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script src="script.js"></script>
+</body>
+</html>
